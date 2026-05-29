@@ -1,0 +1,17 @@
+# CalorieSnap Backend
+# Port: 8020 | Container: calorie-snap-api
+# Talks to Ollama moondream running natively on Windows
+services:
+  calorie-snap-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: calorie-snap-api
+    restart: unless-stopped
+    ports:
+      - "8020:8020"
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - VISION_MODEL=moondream-indian
+    volumes:
+      - ./main.py:/app/main.py:ro

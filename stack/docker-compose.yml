@@ -1,0 +1,100 @@
+# CalorieSnap — Complete Stack
+# BHTLabs · docker compose up
+#
+# Three services:
+#   fastvlm-inference  :8031  Fine-tuned FastVLM 0.5B — GPU, identifies Indian food
+#   calorie-snap-api   :8020  FastAPI orchestrator — calls fastvlm, parses response
+#   ollama             :11434 Base moondream for Stage 1 before/after demo
+#
+# Start:  docker compose up -d
+# Logs:   docker compose logs -f
+# Stop:   docker compose down
+
+services:
+
+  # ── Service 1: FastVLM inference ──────────────────────────────────────
+  fastvlm-inference:
+    build:
+      context: ./fastvlm-inference
+      dockerfile: Dockerfile
+    image: caloriesnap-fastvlm:latest
+    container_name: fastvlm-inference
+    ports:
+      - "8031:8031"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - type: bind
+        source: D:\BHTCorp\bhtlabs-pocs\fastvlm\checkpoints\llava-fastvithd_0.5b_stage3
+        target: /model
+        read_only: true
+      - type: bind
+        source: D:\BHTCorp\bhtlabs-pocs\fastvlm
+        target: /fastvlm
+        read_only: true
+    environment:
+      - MODEL_PATH=/model
+      - FASTVLM_REPO=/fastvlm
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8031/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # ── Service 2: CalorieSnap API ─────────────────────────────────────────
+  calorie-snap-api:
+    build:
+      context: ./calorie-snap-api
+      dockerfile: Dockerfile
+    image: caloriesnap-api:latest
+    container_name: calorie-snap-api
+    ports:
+      - "8020:8020"
+    environment:
+      - FASTVLM_URL=http://fastvlm-inference:8031
+      - OLLAMA_URL=http://ollama:11434
+      - BASE_MODEL=moondream:latest
+    depends_on:
+      - fastvlm-inference
+      - ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8020/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ── Service 3: Ollama — base moondream for Stage 1 demo ───────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - type: bind
+        source: C:\Users\NitinNagar\.ollama
+        target: /root/.ollama
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    restart: unless-stopped
+
+networks:
+  default:
+    name: caloriesnap-network

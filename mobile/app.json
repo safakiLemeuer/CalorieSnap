@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "CalorieSnap",
+    "slug": "calorie-snap",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0a"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bhtlabs.caloriesnap",
+      "infoPlist": {
+        "NSCameraUsageDescription": "CalorieSnap needs camera access to photograph your food.",
+        "NSPhotoLibraryUsageDescription": "CalorieSnap needs photo library access to analyze saved food photos."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0a"
+      },
+      "package": "com.bhtlabs.caloriesnap",
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE"]
+    },
+    "plugins": [
+      ["expo-camera", {"cameraPermission": "CalorieSnap needs camera access to photograph your food."}],
+      ["expo-image-picker", {"photosPermission": "CalorieSnap needs access to your photos."}]
+    ]
+  }
+}
