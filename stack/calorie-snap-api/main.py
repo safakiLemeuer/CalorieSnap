@@ -102,6 +102,7 @@ def db_lookup(name: str) -> Optional[dict]:
                   serving_unit, protein_g, carb_g, fat_g
            FROM dishes
            WHERE LOWER(name) LIKE ? OR LOWER(name_local) LIKE ?
+           ORDER BY LENGTH(name) ASC
            LIMIT 1""",
         (q, q),
     ).fetchone()
