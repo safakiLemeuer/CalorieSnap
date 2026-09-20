@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CalorieSnap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;700&family=Rozha+One&display=swap" rel="stylesheet">
+<style>
+:root{
+  --steel:#E8ECEE; --surface:#F8FAFB; --ink:#172023; --muted:#5B6A70; --line:#C5CDD1;
+  --haldi:#D99A00; --on-haldi:#172023; --leaf:#2E6B3E; --kokum:#8C2242; --neel:#3F5E7A; --jeera:#7A5A33;
+  --display:"Rozha One","Mukta",Georgia,serif; --body:"Mukta","Noto Sans Devanagari",system-ui,-apple-system,"Segoe UI",sans-serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --steel:#12181A; --surface:#1B2427; --ink:#E6ECEE; --muted:#93A2A8; --line:#2E3A3E;
+  --haldi:#F0B323; --leaf:#6FBF83; --kokum:#E0708F; --neel:#8DB0D0; --jeera:#C9A06A;}}
+:root[data-theme="dark"]{
+  --steel:#12181A; --surface:#1B2427; --ink:#E6ECEE; --muted:#93A2A8; --line:#2E3A3E;
+  --haldi:#F0B323; --leaf:#6FBF83; --kokum:#E0708F; --neel:#8DB0D0; --jeera:#C9A06A;}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--steel);color:var(--ink);font:400 16px/1.5 var(--body)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--haldi);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding:16px 16px 96px}
+header.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:8px 0 16px}
+.word{font:400 28px/1 var(--display);letter-spacing:.01em}
+.mode{font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:2px 10px}
+.mode.live{color:var(--leaf);border-color:var(--leaf)}
+h2{font:400 22px/1.2 var(--display);margin:28px 0 10px}
+h3{font:700 15px/1.3 var(--body);margin:0 0 8px}
+p{margin:0 0 10px;max-width:68ch}
+.muted{color:var(--muted)} .small{font-size:13px}
+.view{display:none}.view.on{display:block}
+
+/* bottom tabs */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--surface);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+nav.tabs button{flex:1;background:none;border:0;padding:14px 0 12px;font-weight:500;color:var(--muted);border-top:3px solid transparent;cursor:pointer}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-top-color:var(--haldi)}
+
+/* snap */
+.plate{position:relative;width:min(78vw,340px);aspect-ratio:1;margin:8px auto 18px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,var(--surface),var(--line));
+  box-shadow:inset 0 0 0 10px var(--surface),inset 0 0 0 11px var(--line),0 10px 24px -14px rgba(23,32,35,.6);
+  display:grid;place-items:center;overflow:hidden;cursor:pointer;border:0;padding:0}
+.plate img{position:absolute;inset:11px;width:calc(100% - 22px);height:calc(100% - 22px);object-fit:cover;border-radius:50%}
+.plate .cta{position:relative;text-align:center;padding:0 40px}
+.plate .cta b{display:block;font:400 26px/1.15 var(--display)}
+.plate.busy::after{content:"";position:absolute;inset:0;border-radius:50%;border:5px solid transparent;border-top-color:var(--haldi);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.plate.busy::after{animation:none;border-color:var(--haldi)}}
+.row2{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn{background:var(--haldi);color:var(--on-haldi);border:0;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.btn.sm{padding:6px 10px;font-size:14px;border-radius:8px}
+.alert{border-left:4px solid var(--kokum);background:var(--surface);padding:10px 12px;margin:14px 0;border-radius:0 8px 8px 0}
+.result{display:grid;gap:18px;margin-top:8px}
+@media(min-width:760px){.result{grid-template-columns:300px 1fr;align-items:start}}
+.ring{width:100%;max-width:300px;margin:0 auto;display:block}
+.ring text.total{font:400 44px var(--display);fill:var(--ink)} .ring text.unit{font:500 13px var(--body);fill:var(--muted)}
+ul.items{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+ul.items>li{padding:12px 0;border-bottom:1px solid var(--line)}
+.item-head{display:flex;gap:10px;align-items:baseline}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;transform:translateY(-1px)}
+.item-head .name{font-weight:700;flex:1;min-width:0}
+.item-head .cal{font:400 20px/1 var(--display);white-space:nowrap}
+.meta{font-size:13px;color:var(--muted);margin:2px 0 8px 20px}
+.tag{display:inline-block;font-size:12px;border-radius:4px;padding:0 6px;margin-left:6px;border:1px solid currentColor;font-weight:400}
+.tag.db{color:var(--leaf)} .tag.miss{color:var(--kokum)} .tag.done{color:var(--muted)}
+.acts{display:flex;gap:8px;margin-left:20px;flex-wrap:wrap}
+.editor{margin:10px 0 0 20px;display:grid;gap:8px;grid-template-columns:1fr 96px;max-width:420px}
+.editor input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.editor .full{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+
+/* log */
+.day-total{font:400 40px/1 var(--display)}
+.log li{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.log ul{list-style:none;margin:0;padding:0}
+.thumb{width:52px;height:52px;border-radius:50%;object-fit:cover;flex:none;background:var(--line);box-shadow:0 0 0 3px var(--surface),0 0 0 4px var(--line)}
+.log .what{flex:1;min-width:0}.log .what div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* admin */
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+@media(min-width:760px){.kpis{grid-template-columns:repeat(3,1fr)}}
+.kpi{padding:12px 14px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 -1px -1px 0}
+.kpi .v{font:400 28px/1.1 var(--display)} .kpi .l{font-size:13px;color:var(--muted)} .kpi .s{font-size:12px;color:var(--muted)}
+.kpi.bad .v{color:var(--kokum)} .kpi.good .v{color:var(--leaf)}
+ol.fix{margin:0;padding-left:22px}ol.fix li{margin-bottom:8px;max-width:72ch}ol.fix li b{font-weight:700}
+.grid{display:grid;gap:22px}@media(min-width:820px){.grid{grid-template-columns:1fr 1fr}}
+.panel{min-width:0}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;font-weight:500;color:var(--muted);border-bottom:1px solid var(--line);padding:4px 10px 4px 0;white-space:nowrap}
+td{padding:6px 10px 6px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+svg.chart{width:100%;height:auto;display:block}
+svg.chart text{font:400 11px var(--body);fill:var(--muted)}
+details{border-bottom:1px solid var(--line);padding:8px 0}summary{cursor:pointer}
+pre{white-space:pre-wrap;word-break:break-word;font-size:12px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px;margin:8px 0 0}
+.queue li{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.queue ul{list-style:none;margin:0;padding:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><span class="word">CalorieSnap</span><span id="mode" class="mode">Checking</span></header>
+
+  <section id="v-snap" class="view on" aria-label="Snap">
+    <button id="plate" class="plate" aria-label="Take or choose a photo of your meal">
+      <span class="cta"><b>Photograph your plate</b><span class="muted">Thali, tiffin, or a single dish</span></span>
+    </button>
+    <input id="file" type="file" accept="image/*" capture="environment" hidden>
+    <div class="row2">
+      <button id="pick" class="btn ghost">Choose from library</button>
+      <select id="model" hidden aria-label="Model"></select>
+    </div>
+    <div id="snap-msg"></div>
+    <div id="result"></div>
+  </section>
+
+  <section id="v-log" class="view" aria-label="Log"><div id="log"></div></section>
+  <section id="v-admin" class="view" aria-label="Admin"><div id="admin"></div></section>
+</div>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-v="snap" aria-selected="true">Snap</button>
+  <button role="tab" data-v="log" aria-selected="false">Log</button>
+  <button role="tab" data-v="admin" aria-selected="false">Admin</button>
+</nav>
+
+<datalist id="dishlist"></datalist>
+
+<script>
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct = v => v == null ? "n/a" : Math.round(v * 100) + "%";
+const num = v => v == null ? "n/a" : Number(v).toLocaleString("en-US");
+const usd = v => v == null ? "n/a" : "$" + Number(v).toFixed(4);
+const SPICE = ["var(--haldi)", "var(--leaf)", "var(--kokum)", "var(--neel)", "var(--jeera)"];
+const state = {live: false, current: null, days: 7, kind: "unreviewed"};
+
+/* ---------- API with demo fallback ---------- */
+async function api(path, opts = {}) {
+  if (!state.live) return demo(path, opts);
+  const headers = {"content-type": "application/json"};
+  const res = await fetch("/api" + path, {method: opts.body ? "POST" : "GET", headers, body: opts.body ? JSON.stringify(opts.body) : undefined});
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { const e = new Error(data.error?.message || data.detail || ("HTTP " + res.status)); e.status = res.status; e.stage = data.error?.stage; throw e; }
+  return data;
+}
+
+/* ---------- image prep: resize in the browser, same as the iPhone will ---------- */
+function loadImage(file) {
+  return new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => bad(new Error("That file is not a readable image.")); i.src = URL.createObjectURL(file); });
+}
+function toJpeg(img, max, q) {
+  const k = Math.min(1, max / Math.max(img.width, img.height));
+  const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", q).split(",")[1];
+}
+
+/* ---------- Snap ---------- */
+$("#plate").onclick = () => { $("#file").setAttribute("capture", "environment"); $("#file").click(); };
+$("#pick").onclick = () => { $("#file").removeAttribute("capture"); $("#file").click(); };
+$("#file").onchange = async ev => {
+  const file = ev.target.files[0]; ev.target.value = ""; if (!file) return;
+  const plate = $("#plate"); $("#snap-msg").innerHTML = ""; $("#result").innerHTML = "";
+  try {
+    const img = await loadImage(file);
+    const thumb = toJpeg(img, 96, .7), image = toJpeg(img, 768, .85);
+    plate.innerHTML = `<img alt="Your photo" src="data:image/jpeg;base64,${toJpeg(img, 400, .8)}">`;
+    plate.classList.add("busy");
+    const body = {image_b64: image, thumb_b64: thumb, media_type: "image/jpeg"};
+    if (!$("#model").hidden) body.model = $("#model").value;
+    state.current = await api("/snap", {body});
+    renderResult();
+  } catch (e) {
+    const fix = {config: "Add FOUNDRY_ENDPOINT and FOUNDRY_API_KEY to /data/caloriesnap_config.json, then retry.",
+      llm_http: "The model endpoint did not answer. Check the deployment name, key, and network, then retry.",
+      llm_parse: "The model replied without usable JSON. Retry the photo. The raw reply is saved under Admin.",
+      local_vlm: "The FastVLM container did not answer. Check that fastvlm-inference is running and FASTVLM_URL is right.",
+      db: "The INDB database could not be read. Check CUISINE_DB."}[e.stage] || "Retry the photo.";
+    $("#snap-msg").innerHTML = `<div class="alert"><b>Photo not analyzed.</b> ${esc(e.message)}<br><span class="small">${esc(fix)}</span></div>`;
+  } finally { plate.classList.remove("busy"); }
+};
+
+const uncounted = items => items.filter(i => (i.cal == null || i.suspect) && i.verdict !== "extra").length;
+function ringSvg(items, total) {
+  const miss = uncounted(items);
+  const R = 120, C = 2 * Math.PI * R; let off = 0, arcs = "";
+  items.forEach((it, i) => {
+    if (!it.cal || !total || it.suspect) return;
+    const len = it.cal / total * C, gap = items.length > 1 ? 3 : 0;
+    arcs += `<circle r="${R}" cx="150" cy="150" fill="none" stroke="${SPICE[i % 5]}" stroke-width="26" stroke-dasharray="${Math.max(0, len - gap)} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 150 150)"/>`;
+    off += len;
+  });
+  return `<svg class="ring" viewBox="0 0 300 300" role="img" aria-label="${Math.round(total)} calories in total">
+    <circle r="120" cx="150" cy="150" fill="none" stroke="var(--line)" stroke-width="26"/>${arcs}
+    <text class="total" x="150" y="158" text-anchor="middle">${num(Math.round(total))}${miss ? "+" : ""}</text>
+    <text class="unit" x="150" y="182" text-anchor="middle">${miss ? `calories, ${miss} dish${miss > 1 ? "es" : ""} not counted` : "calories, INDB verified"}</text></svg>`;
+}
+
+function renderResult() {
+  const r = state.current, el = $("#result");
+  if (!r.items.length) { el.innerHTML = `<div class="alert"><b>No food found in this photo.</b> Try a closer shot with the whole plate in frame, or add the dishes yourself.</div><button class="btn ghost" data-add>Add a dish</button><div id="ed-add"></div>`; bindResult(); return; }
+  const rows = r.items.map((it, i) => {
+    const shown = (it.verdict !== "wrong_match" && it.corrected_dish) || it.dish, grams = it.corrected_portion_g || it.portion_g;
+    const tag = it.verdict === "extra" ? `<span class="tag done">removed</span>` : it.cal != null ? (it.suspect ? `<span class="tag miss">INDB value looks wrong, not counted</span>` : it.approx ? `<span class="tag done">closest match</span>` : `<span class="tag db">db</span>`) : `<span class="tag miss">not in INDB</span>`;
+    const via = it.matched_name && it.matched_name.toLowerCase() !== String(shown).toLowerCase() ? `<br>INDB: ${esc(it.matched_name)}` : "";
+    const local = it.name_local && (!it.corrected_dish || it.verdict === "wrong_match") ? esc(it.name_local) + ", " : "";
+    const conf = it.confidence != null && !it.verdict ? `, ${pct(it.confidence)} sure` : "";
+    const acts = it.verdict ? `<span class="small muted">${it.verdict === "correct" ? "Confirmed" : it.verdict === "wrong_match" ? "Match saved. This name now always uses that INDB row." : "Saved. This correction trains the next version."}</span>`
+      : `<button class="btn sm" data-ok="${i}">Correct</button><button class="btn sm ghost" data-fix="${i}">Fix this</button>${it.matched_name ? `<button class="btn sm ghost" data-rematch="${i}">Wrong INDB match</button>` : ""}`;
+    return `<li><div class="item-head"><span class="dot" style="background:${SPICE[i % 5]}"></span><span class="name">${esc(shown)}${tag}</span><span class="cal"${it.suspect ? ' style="text-decoration:line-through;color:var(--muted)" title="Not counted: the INDB value looks wrong"' : ""}>${it.cal != null ? num(Math.round(it.cal)) : "?"}</span></div>
+      <div class="meta">${local}${grams ? num(Math.round(grams)) + " g" : "portion unknown"}${conf}${via}</div><div class="acts">${acts}</div><div id="ed-${i}"></div></li>`;
+  }).join("");
+  el.innerHTML = `<div class="result"><div>${ringSvg(r.items, r.total_calories)}</div><div><ul class="items">${rows}</ul>
+    <div class="row2" style="justify-content:flex-start;margin-top:12px"><button class="btn ghost" data-add>Add a missing dish</button></div><div id="ed-add"></div>
+    <p class="small muted" style="margin-top:12px">Calories come only from the ICMR-NIN Indian Nutrient Databank. The model names the dish and estimates the portion.</p></div></div>`;
+  bindResult();
+}
+
+function editor(slot, it) {
+  slot.innerHTML = `<div class="editor"><input data-d list="dishlist" placeholder="Dish name" value="${esc(it ? it.dish : "")}" aria-label="Dish name">
+    <input data-g type="number" min="1" inputmode="numeric" placeholder="grams" value="${it && it.portion_g ? Math.round(it.portion_g) : ""}" aria-label="Portion in grams">
+    <div class="full"><button class="btn sm" data-save>Save correction</button>${it ? `<button class="btn sm ghost" data-extra>Not on my plate</button>` : ""}<button class="btn sm ghost" data-cancel>Cancel</button></div></div>`;
+  const d = $("[data-d]", slot); d.focus();
+  d.oninput = async () => { try { const names = await api("/dishes?q=" + encodeURIComponent(d.value)); $("#dishlist").innerHTML = names.map(n => `<option value="${esc(n)}">`).join(""); } catch (e) {} };
+  $("[data-cancel]", slot).onclick = () => slot.innerHTML = "";
+  const send = async verdictOverride => {
+    const dish = d.value.trim(), g = parseFloat($("[data-g]", slot).value) || null;
+    let verdict = verdictOverride; const body = {event_id: state.current.event_id};
+    if (!it) { if (!dish) return d.focus(); verdict = "missing"; body.corrected_dish = dish; body.corrected_portion_g = g; }
+    else if (!verdict) {
+      const dishChanged = dish && dish.toLowerCase() !== it.dish.toLowerCase(), gChanged = g && g !== Math.round(it.portion_g || 0);
+      verdict = dishChanged ? "wrong_dish" : gChanged ? "wrong_portion" : "correct";
+      if (dishChanged) body.corrected_dish = dish; if (gChanged) body.corrected_portion_g = g;
+    }
+    body.verdict = verdict; if (it) body.item_id = it.id;
+    const out = await api("/feedback", {body});
+    if (it) Object.assign(it, {verdict, cal: out.cal, corrected_dish: body.corrected_dish, corrected_portion_g: body.corrected_portion_g});
+    else state.current.items.push({id: out.item_id, dish, portion_g: g, cal: out.cal, verdict: "missing", confidence: null});
+    state.current.total_calories = out.total_calories; renderResult();
+  };
+  $("[data-save]", slot).onclick = () => send();
+  const ex = $("[data-extra]", slot); if (ex) ex.onclick = () => send("extra");
+}
+
+function rematch(slot, it) {
+  // Visible, clickable suggestions. A native datalist is easy to miss and a
+  // typed partial name ("boiled") is not an exact INDB name.
+  slot.innerHTML = `<div class="editor"><input data-d placeholder="Type the right INDB dish, then pick it below" aria-label="INDB dish name" style="grid-column:1/-1" autocomplete="off">
+    <div class="full" data-sugg></div>
+    <div class="full"><button class="btn sm ghost" data-cancel>Cancel</button></div>
+    <div class="full small" data-err style="color:var(--kokum)" role="alert"></div></div>`;
+  const d = $("[data-d]", slot), sugg = $("[data-sugg]", slot), err = $("[data-err]", slot); d.focus();
+  const save = async name => {
+    err.textContent = "";
+    try { const out = await api("/feedback", {body: {event_id: state.current.event_id, item_id: it.id, verdict: "wrong_match", corrected_dish: name}});
+      Object.assign(it, {verdict: "wrong_match", cal: out.cal, matched_name: name, approx: false, suspect: false});
+      state.current.total_calories = out.total_calories; renderResult();
+    } catch (e) { err.textContent = "Match not saved: " + e.message; } };
+  let seq = 0;
+  d.oninput = async () => {
+    const mine = ++seq, q = d.value.trim(); err.textContent = "";
+    if (q.length < 2) { sugg.innerHTML = ""; return; }
+    try { const names = await api("/dishes?q=" + encodeURIComponent(q)); if (mine !== seq) return;
+      sugg.innerHTML = names.length ? names.map((n, i) => `<button class="btn sm ghost" data-pick="${i}">${esc(n)}</button>`).join("") : `<span class="small muted">No INDB dish contains "${esc(q)}". Try one word, such as "rice".</span>`;
+      sugg.querySelectorAll("[data-pick]").forEach(b => b.onclick = () => save(names[b.dataset.pick]));
+    } catch (e) { err.textContent = "Search failed: " + e.message; } };
+  d.onkeydown = e => { if (e.key === "Enter") { const first = $("[data-pick]", sugg); if (first) first.click(); } };
+  $("[data-cancel]", slot).onclick = () => slot.innerHTML = "";
+}
+
+function bindResult() {
+  const el = $("#result"), items = state.current.items;
+  el.querySelectorAll("[data-ok]").forEach(b => b.onclick = async () => {
+    const it = items[b.dataset.ok]; const out = await api("/feedback", {body: {event_id: state.current.event_id, item_id: it.id, verdict: "correct"}});
+    it.verdict = "correct"; state.current.total_calories = out.total_calories; renderResult(); });
+  el.querySelectorAll("[data-fix]").forEach(b => b.onclick = () => editor($("#ed-" + b.dataset.fix), items[b.dataset.fix]));
+  el.querySelectorAll("[data-rematch]").forEach(b => b.onclick = () => rematch($("#ed-" + b.dataset.rematch), items[b.dataset.rematch]));
+  el.querySelectorAll("[data-add]").forEach(b => b.onclick = () => editor($("#ed-add"), null));
+}
+
+/* ---------- Log ---------- */
+const thumbOf = e => e.thumb_b64 ? `<img class="thumb" alt="" src="data:image/jpeg;base64,${esc(e.thumb_b64)}">` : `<span class="thumb"></span>`;
+const dishNames = e => e.items.filter(i => i.verdict !== "extra").map(i => (i.verdict !== "wrong_match" && i.corrected_dish) || i.dish_pred || i.corrected_dish).filter(Boolean).join(", ");
+async function renderLog() {
+  const el = $("#log"); let rows;
+  try { rows = await api("/history"); } catch (e) { el.innerHTML = `<div class="alert"><b>Log not loaded.</b> ${esc(e.message)}</div>`; return; }
+  if (!rows.length) { el.innerHTML = `<h2>Today</h2><p class="muted">Nothing logged yet. Photograph a meal on the Snap tab and it lands here.</p>`; return; }
+  const today = new Date().toDateString(), sum = rows.filter(e => new Date(e.ts * 1000).toDateString() === today).reduce((a, e) => a + (e.total_cal || 0), 0);
+  el.innerHTML = `<h2>Today</h2><div class="day-total">${num(Math.round(sum))} <span class="small muted" style="font-family:var(--body)">calories${rows.some(e => new Date(e.ts * 1000).toDateString() === today && uncounted(e.items)) ? ", some dishes not counted" : ""}</span></div>
+    <h2>Recent meals</h2><div class="log"><ul>${rows.map(e => `<li>${thumbOf(e)}<div class="what"><div><b>${esc(dishNames(e) || "No dishes")}</b></div>
+    <div class="small muted">${new Date(e.ts * 1000).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"})}</div></div>
+    <div style="font:400 20px var(--display)">${num(Math.round(e.total_cal || 0))}${uncounted(e.items) ? "+" : ""}</div></li>`).join("")}</ul></div>`;
+}
+
+/* ---------- Admin ---------- */
+function fixList(s) {
+  const k = s.kpis, out = [];
+  if (k.error_rate > .05) { const top = s.errors_by_stage[0]; out.push([k.error_rate * 3, `<b>${pct(k.error_rate)} of snaps fail.</b> Most failures are at the ${esc(top?.name)} stage (${top?.n}). Open Recent errors below for the raw replies.`]); }
+  if (s.db_misses.length) { const m = s.db_misses.slice(0, 3).map(d => `${esc(d.name)} (${d.n})`).join(", "); out.push([(1 - (k.match_rate ?? 1)) * 2, `<b>${pct(1 - (k.match_rate ?? 1))} of identified dishes have no INDB row.</b> Add these first: ${m}. Each one is a user who saw "?" instead of calories.`]); }
+  if (k.suspect_hits) out.push([1.5, `<b>${k.suspect_hits} matched dishes use INDB rows with implausible energy values.</b> Worst: ${esc(s.suspect_rows[0]?.name)}. Users are seeing wrong calories labeled as verified. Run scripts/audit_indb.py and fix the rows at the source.`]);
+  if (k.wrong_matches) out.push([1.2, `<b>${k.wrong_matches} dishes were tied to the wrong INDB row.</b> Latest: ${esc(s.bad_matches[0]?.name)}. Each fix is pinned, so it cannot recur. If one pattern repeats, tighten the picker prompt.`]);
+  const low = s.calibration.find(c => c.rated >= 3 && c.accuracy != null && c.accuracy < .6);
+  if (low) out.push([.9, `<b>Confidence ${low.bucket} is only ${pct(low.accuracy)} accurate.</b> Ask the user to confirm before logging anything in that range.`]);
+  if (s.consistency.unstable) out.push([s.consistency.unstable / Math.max(1, s.consistency.repeated_photos), `<b>${s.consistency.unstable} of ${s.consistency.repeated_photos} repeated photos changed answers.</b> Set temperature to 0 and compare models under Model comparison.`]);
+  if (s.confusions.length) out.push([.5, `<b>Top confusion: ${esc(s.confusions[0].name)} (${s.confusions[0].n}).</b> Add a disambiguation line to the prompt, or a sibling check in the verifier.`]);
+  if (k.missing_items) out.push([.45, `<b>Users added ${k.missing_items} dishes the model missed.</b> Most missed: ${esc(s.missed_dishes[0]?.name)}. That is a recall problem, usually small sides and chutneys.`]);
+  const weak = s.by_match_method.find(m => m.name !== "exact" && m.name !== "no match" && m.rated >= 3 && m.accuracy < .7);
+  if (weak) out.push([.4, `<b>"${esc(weak.name)}" matches are ${pct(weak.accuracy)} accurate.</b> Replace that fallback with the embedding match at the 0.72 threshold.`]);
+  if (k.review_coverage != null && k.review_coverage < .3) out.push([.2, `<b>Only ${pct(k.review_coverage)} of items are rated.</b> Accuracy numbers are thin. Work the review queue below.`]);
+  return out.sort((a, b) => b[0] - a[0]).slice(0, 5).map(x => x[1]);
+}
+function dailyChart(daily) {
+  if (!daily.length) return `<p class="muted small">No snaps in this range.</p>`;
+  const W = 520, H = 150, max = Math.max(...daily.map(d => d.snaps), 1), step = (W - 30) / daily.length, bw = Math.min(46, step - 6);
+  const every = Math.ceil(daily.length / 10);
+  const bars = daily.map((d, i) => { const x = 30 + i * step, h = d.snaps / max * (H - 40), he = d.errors / max * (H - 40);
+    return `<rect x="${x}" y="${H - 22 - h}" width="${bw}" height="${h}" fill="var(--neel)" rx="2"/><rect x="${x}" y="${H - 22 - he}" width="${bw}" height="${he}" fill="var(--kokum)" rx="2"/>
+    ${i % every ? "" : `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${d.day.slice(5)}</text><text x="${x + bw / 2}" y="${H - 26 - h}" text-anchor="middle">${d.snaps}</text>`}`; }).join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Snaps and errors per day">${bars}</svg><div class="small muted">Blue: snaps. Maroon: failed.</div>`;
+}
+function calibChart(cal) {
+  const W = 520, H = 150, bw = 90;
+  const bars = cal.map((c, i) => { const x = 30 + i * 122, h = (c.accuracy ?? 0) * (H - 46);
+    return `<rect x="${x}" y="22" width="${bw}" height="${H - 46}" fill="none" stroke="var(--line)"/><rect x="${x}" y="${H - 24 - h}" width="${bw}" height="${h}" fill="${c.accuracy != null && c.accuracy < .6 ? "var(--kokum)" : "var(--leaf)"}"/>
+    <text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${c.bucket}</text><text x="${x + bw / 2}" y="${Math.max(14, H - 30 - h)}" text-anchor="middle">${c.accuracy == null ? "no ratings" : pct(c.accuracy) + " of " + c.rated}</text>`; }).join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Accuracy by model confidence">${bars}</svg><div class="small muted">Model confidence on the x axis, measured accuracy as bar height. Bars should rise left to right. If they do not, confidence is noise.</div>`;
+}
+const tbl = (head, rows) => rows.length ? `<div class="scroll"><table><tr>${head.map(h => `<th class="${h[1] || ""}">${h[0]}</th>`).join("")}</tr>${rows.join("")}</table></div>` : `<p class="muted small">Nothing yet.</p>`;
+
+async function renderAdmin() {
+  const el = $("#admin"); let s;
+  try { s = await api("/admin/summary?days=" + state.days); }
+  catch (e) {
+    el.innerHTML = `<div class="alert"><b>Admin not loaded.</b> ${esc(e.message)}</div>`; return;
+  }
+  const k = s.kpis, fixes = fixList(s);
+  const kpi = (v, l, sub, cls) => `<div class="kpi ${cls || ""}"><div class="v">${v}</div><div class="l">${l}</div><div class="s">${sub || ""}</div></div>`;
+  el.innerHTML = `
+  <div class="bar"><h2 style="margin:8px 0;flex:1">Admin</h2>
+    <select id="days" aria-label="Date range">${[1, 7, 30, 90].map(d => `<option value="${d}" ${d === state.days ? "selected" : ""}>Last ${d} day${d > 1 ? "s" : ""}</option>`).join("")}</select>
+    <button id="export" class="btn ghost sm">Export labels CSV</button></div>
+  <div class="kpis">
+    ${kpi(num(k.snaps), "Snaps", `${num(k.items)} dishes identified${(s.by_source || []).length > 1 ? ", " + s.by_source.map(x => esc(x.name) + " " + x.n).join(", ") : ""}`)}
+    ${kpi(pct(k.accuracy), "Identification accuracy", `${num(k.rated_items)} rated, ${pct(k.review_coverage)} coverage`, k.accuracy == null ? "" : k.accuracy >= .85 ? "good" : "bad")}
+    ${kpi(pct(k.match_rate), "INDB match rate", `${s.db_misses.length} distinct names missing`, k.match_rate != null && k.match_rate < .8 ? "bad" : "")}
+    ${kpi(pct(k.error_rate), "Failed snaps", `${num(k.errors)} errors`, k.error_rate > .05 ? "bad" : "")}
+    ${kpi(k.p50_ms == null ? "n/a" : (k.p50_ms / 1000).toFixed(1) + " s", "Median latency", `p95 ${k.p95_ms == null ? "n/a" : (k.p95_ms / 1000).toFixed(1) + " s"}, model ${num(k.avg_llm_ms)} ms, DB ${num(k.avg_db_ms)} ms`)}
+    ${kpi(usd(k.avg_cost_usd), "Cost per photo", `${num(k.avg_input_tokens)} in, ${num(k.avg_output_tokens)} out, ${usd(k.total_cost_usd)} total`)}
+  </div>
+  <h2>Fix these next</h2>${fixes.length ? `<ol class="fix">${fixes.map(f => `<li>${f}</li>`).join("")}</ol>` : `<p class="muted">No problem stands out in this range. Rate more items to sharpen the numbers.</p>`}
+  <div class="grid">
+    <div class="panel"><h2>Volume and failures</h2>${dailyChart(s.daily)}</div>
+    <div class="panel"><h2>Is confidence trustworthy?</h2>${calibChart(s.calibration)}</div>
+    <div class="panel"><h2>Dishes missing from INDB</h2><p class="small muted">The curation queue, ranked by how often users hit it.</p>${tbl([["Model said"], ["Times", "n"]], s.db_misses.map(d => `<tr><td>${esc(d.name)}</td><td class="n">${d.n}</td></tr>`))}</div>
+    <div class="panel"><h2>Wrong dish, corrected by users</h2><p class="small muted">Predicted, then what the user said it was.</p>${tbl([["Confusion"], ["Times", "n"]], s.confusions.map(d => `<tr><td>${esc(d.name)}</td><td class="n">${d.n}</td></tr>`))}
+      <h3 style="margin-top:16px">Dishes the model did not see</h3>${tbl([["Added by user"], ["Times", "n"]], s.missed_dishes.map(d => `<tr><td>${esc(d.name)}</td><td class="n">${d.n}</td></tr>`))}</div>
+    <div class="panel"><h2>Model comparison</h2>${tbl([["Model"], ["Snaps", "n"], ["Accuracy", "n"], ["Failed", "n"], ["Median", "n"], ["Cost", "n"]], s.by_model.map(m => `<tr><td>${esc(m.model)}</td><td class="n">${m.snaps}</td><td class="n">${pct(m.accuracy)}</td><td class="n">${pct(m.error_rate)}</td><td class="n">${num(m.p50_ms)} ms</td><td class="n">${usd(m.avg_cost_usd)}</td></tr>`))}
+      <p class="small muted" style="margin-top:8px">Same photo run twice: ${s.consistency.unstable} of ${s.consistency.repeated_photos} changed answers.</p></div>
+    <div class="panel"><h2>Wrong INDB row, fixed by users</h2><p class="small muted">Right dish, wrong database row. Model said, then the row the user pinned.</p>${tbl([["Rematch"], ["Times", "n"]], (s.bad_matches || []).map(d => `<tr><td>${esc(d.name)}</td><td class="n">${d.n}</td></tr>`))}</div>
+    <div class="panel"><h2>Release comparison</h2><p class="small muted">Did the last change help? Match rate and accuracy per API version.</p>${tbl([["Version"], ["Snaps", "n"], ["Dishes", "n"], ["INDB match", "n"], ["Accuracy", "n"]], (s.by_version || []).map(v => `<tr><td>${esc(v.version)}</td><td class="n">${v.snaps}</td><td class="n">${v.items}</td><td class="n">${pct(v.match_rate)}</td><td class="n">${pct(v.accuracy)}</td></tr>`))}</div>
+    <div class="panel"><h2>Test a dish name</h2><p class="small muted">Shows the INDB candidates and what the picker chooses. Writes nothing.</p><div class="bar"><input id="mq" placeholder="Basmati Rice" aria-label="Dish name" style="flex:1;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)"><button id="mgo" class="btn sm">Test match</button></div><div id="mout" class="small"></div></div>
+    <div class="panel"><h2>INDB rows with suspect data</h2><p class="small muted">Matched rows over 500 kcal per 100 g, or with an impossible serving weight.</p>${tbl([["INDB row"], ["Hits", "n"]], (s.suspect_rows || []).map(d => `<tr><td>${esc(d.name)}</td><td class="n">${d.n}</td></tr>`))}</div>
+    <div class="panel"><h2>Accuracy by INDB match method</h2>${tbl([["Method"], ["Items", "n"], ["Rated", "n"], ["Accuracy", "n"]], s.by_match_method.map(m => `<tr><td>${esc(m.name)}</td><td class="n">${m.items}</td><td class="n">${m.rated}</td><td class="n">${pct(m.accuracy)}</td></tr>`))}</div>
+  </div>
+  <h2>Recent errors</h2>${s.recent_errors.length ? s.recent_errors.map(e => `<details><summary><b>${esc(e.error_stage)}</b> ${esc((e.error_msg || "").slice(0, 90))} <span class="small muted">${new Date(e.ts * 1000).toLocaleString("en-US")}, ${esc(e.model)}</span></summary><pre>${esc(e.error_msg)}${e.raw_output ? "\n\nRaw model output:\n" + esc(e.raw_output) : ""}</pre></details>`).join("") : `<p class="muted small">No failed snaps in this range.</p>`}
+  <div class="bar" style="margin-top:28px"><h2 style="margin:0;flex:1">Review queue</h2><select id="kind" aria-label="Queue filter">${[["unreviewed", "Not yet rated"], ["low_conf", "Low confidence or no INDB match"], ["errors", "Failed"], ["all", "Everything"]].map(o => `<option value="${o[0]}" ${o[0] === state.kind ? "selected" : ""}>${o[1]}</option>`).join("")}</select></div>
+  <div id="queue" class="queue"></div>`;
+  $("#mgo").onclick = async () => {
+    const q = $("#mq").value.trim(); if (!q) return $("#mq").focus();
+    if (!state.live) { $("#mout").textContent = "Match testing needs the live API."; return; }
+    $("#mout").textContent = "Matching";
+    try { const r = await api("/admin/match?dish=" + encodeURIComponent(q));
+      const p = r.picker;
+      $("#mout").innerHTML = `<p><b>Picker:</b> ${p ? (p.error ? esc(p.error) : p.choice ? esc(p.choice) + " (" + esc(p.quality) + ")" : "none of the candidates") : "not available"}<br><b>String match:</b> ${r.string_match ? esc(r.string_match.name) + " (" + esc(r.string_match.method) + ")" : "none"}<br><b>Cached alias:</b> ${r.alias ? "dish " + r.alias[0] + " (" + esc(r.alias[1]) + ")" : "none"}</p><div class="bar"><input id="pin" placeholder="Pin to an INDB dish: type, then pick below" aria-label="INDB dish to pin" autocomplete="off" style="flex:1;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)"><button id="pinclr" class="btn sm ghost">Clear saved match</button></div><div id="pinsugg" class="bar"></div><p id="pinmsg" role="alert"></p><p class="muted">${r.candidates.length} candidates: ${r.candidates.map(esc).join("; ") || "none"}</p>`;
+      const setAlias = async name => { try { const o = await api("/admin/alias", {body: {dish: q, indb_name: name}}); $("#pinmsg").textContent = o.alias ? `Pinned. "${q}" now always uses ${o.alias}.` : `Cleared. "${q}" goes back to the picker.`; $("#pinsugg").innerHTML = ""; } catch (e) { $("#pinmsg").textContent = "Not pinned: " + e.message; } };
+      $("#pin").oninput = async () => { const v = $("#pin").value.trim(); if (v.length < 2) { $("#pinsugg").innerHTML = ""; return; }
+        try { const names = await api("/dishes?q=" + encodeURIComponent(v)); $("#pinsugg").innerHTML = names.map((n, i) => `<button class="btn sm ghost" data-pin="${i}">${esc(n)}</button>`).join("") || `<span class="small muted">No INDB dish contains "${esc(v)}".</span>`;
+          document.querySelectorAll("[data-pin]").forEach(b => b.onclick = () => setAlias(names[b.dataset.pin])); } catch (e) { $("#pinmsg").textContent = e.message; } };
+      $("#pinclr").onclick = () => setAlias(null);
+    } catch (e) { $("#mout").textContent = e.message; } };
+  $("#days").onchange = e => { state.days = +e.target.value; renderAdmin(); };
+  $("#kind").onchange = e => { state.kind = e.target.value; renderQueue(); };
+  $("#export").onclick = () => { if (!state.live) { $("#export").textContent = "Export needs the live API"; return; } location.href = "/api/admin/export.csv"; };
+  renderQueue();
+}
+async function renderQueue() {
+  const el = $("#queue"); let rows;
+  try { rows = await api("/admin/events?kind=" + state.kind); } catch (e) { el.innerHTML = `<div class="alert">${esc(e.message)}</div>`; return; }
+  el.innerHTML = rows.length ? `<ul>${rows.map(e => `<li>${thumbOf(e)}<div style="flex:1;min-width:0"><div><b>#${e.id}</b> <span class="small muted">${new Date(e.ts * 1000).toLocaleString("en-US")}, ${esc(e.model)}, ${esc(e.source || "web")}, ${num(e.total_ms)} ms</span></div>
+    ${e.error_stage ? `<div class="small" style="color:var(--kokum)">${esc(e.error_stage)}: ${esc(e.error_msg)}</div>` : ""}
+    ${e.items.map(i => `<div class="small">${esc(i.dish_pred || i.corrected_dish)} <span class="muted">${i.confidence != null ? pct(i.confidence) : ""} ${i.matched_name ? "matched " + esc(i.matched_name) + " (" + esc(i.match_method) + ")" : i.dish_pred ? "no INDB match" : ""}</span> ${i.verdict ? `<span class="tag ${i.verdict === "correct" ? "db" : "miss"}">${esc(i.verdict.replace("_", " "))}${i.corrected_dish && i.dish_pred ? ": " + esc(i.corrected_dish) : ""}</span>` : `<span class="tag done">unrated</span>`}</div>`).join("")}</div></li>`).join("")}</ul>` : `<p class="muted">Queue is empty for this filter.</p>`;
+}
+
+/* ---------- Demo data, used when the API is not reachable ---------- */
+const D = {events: [], nextId: 100};
+function seedDemo() {
+  const now = Date.now() / 1000, mk = (id, ago, items, total) => ({id, ts: now - ago, model: "claude-haiku-4-5", total_ms: 2100 + id * 37 % 900, total_cal: total, items});
+  D.events = [
+    mk(41, 3600, [{id: 1, dish_pred: "Poha", confidence: .93, matched_name: "Poha", match_method: "exact", cal: 260, verdict: "correct"}], 260),
+    mk(40, 22000, [{id: 2, dish_pred: "Dal Makhani", confidence: .88, matched_name: "Dal makhani", match_method: "exact", cal: 280, verdict: "correct"}, {id: 3, dish_pred: "Jeera Rice", confidence: .81, matched_name: "Jeera rice", match_method: "exact", cal: 240}, {id: 4, dish_pred: "Tandoori Roti", confidence: .77, matched_name: "Roti", match_method: "contained", cal: 120}], 640),
+    mk(39, 90000, [{id: 5, dish_pred: "Neer Dosa", confidence: .64, matched_name: null, cal: null}, {id: 6, dish_pred: "Coconut Chutney", confidence: .7, matched_name: "Coconut chutney", match_method: "exact", cal: 95}], 95)];
+}
+const DEMO_SUMMARY = {kpis: {snaps: 212, errors: 9, error_rate: .042, p50_ms: 2300, p95_ms: 4900, avg_llm_ms: 2210, avg_db_ms: 4, avg_cost_usd: .0017, total_cost_usd: .3451, avg_input_tokens: 1040, avg_output_tokens: 132, items: 655, match_rate: .71, rated_items: 248, accuracy: .83, review_coverage: .38, missing_items: 31, portion_fixes: 44, suspect_hits: 6, wrong_matches: 3},
+  daily: [[11, 0], [24, 1], [31, 2], [28, 0], [39, 3], [35, 1], [44, 2]].map((d, i) => ({day: new Date(Date.now() - (6 - i) * 864e5).toISOString().slice(0, 10), snaps: d[0], errors: d[1]})),
+  errors_by_stage: [{name: "llm_parse", n: 5}, {name: "llm_http", n: 4}],
+  recent_errors: [{id: 198, ts: Date.now() / 1000 - 5000, model: "claude-haiku-4-5", error_stage: "llm_parse", error_msg: "No JSON object in model output", raw_output: "I can see a plate with several Indian dishes, but the image is too dark to identify them reliably."}, {id: 171, ts: Date.now() / 1000 - 140000, model: "claude-haiku-4-5", error_stage: "llm_http", error_msg: "HTTP 429: rate limit exceeded for deployment", raw_output: null}],
+  db_misses: [["neer dosa", 14], ["paneer tikka", 12], ["pani puri", 11], ["malai kofta", 8], ["pesarattu", 6], ["haleem", 5], ["modak", 4]].map(x => ({name: x[0], n: x[1]})),
+  confusions: [["Dal Makhani -> Rajma", 7], ["Upma -> Poha", 5], ["Naan -> Kulcha", 4], ["Sambar -> Rasam", 3]].map(x => ({name: x[0], n: x[1]})),
+  missed_dishes: [["green chutney", 9], ["papad", 7], ["raita", 6], ["pickle", 5]].map(x => ({name: x[0], n: x[1]})),
+  calibration: [{bucket: "0.00-0.50", items: 38, rated: 22, accuracy: .41}, {bucket: "0.50-0.70", items: 96, rated: 47, accuracy: .68}, {bucket: "0.70-0.85", items: 204, rated: 81, accuracy: .85}, {bucket: "0.85-1.00", items: 317, rated: 98, accuracy: .95}],
+  by_match_method: [{name: "contained", items: 71, rated: 30, accuracy: .63}, {name: "exact", items: 322, rated: 141, accuracy: .93}, {name: "like", items: 72, rated: 33, accuracy: .79}, {name: "no match", items: 190, rated: 44, accuracy: .7}],
+  by_model: [{model: "claude-haiku-4-5", snaps: 162, error_rate: .037, p50_ms: 2300, avg_cost_usd: .0017, rated: 201, accuracy: .85}, {model: "gpt-mini (sample)", snaps: 50, error_rate: .06, p50_ms: 1900, avg_cost_usd: .0006, rated: 47, accuracy: .74}],
+  bad_matches: [{name: "Basmati Rice -> Boiled rice (Uble chawal)", n: 2}, {name: "Raita -> Cucumber raita", n: 1}],
+  by_version: [{version: "pre-3.3", snaps: 140, items: 430, match_rate: .41, rated: 160, accuracy: .82}, {version: "3.3.0", snaps: 72, items: 225, match_rate: .88, rated: 88, accuracy: .85}],
+  suspect_rows: [{name: "Gulab Jamun with khoya", n: 4}, {name: "Paneer pulao", n: 2}],
+  consistency: {repeated_photos: 18, unstable: 3}};
+async function demo(path, opts) {
+  await new Promise(r => setTimeout(r, path === "/snap" ? 1100 : 120));
+  if (path === "/snap") { const id = D.nextId++, items = [["Poha", "पोहा", 180, .92, 234], ["Masala Chai", "चाय", 150, .84, 105], ["Neer Dosa", null, 80, .58, null]].map((x, i) => ({id: id * 10 + i, dish: x[0], name_local: x[1], portion_g: x[2], confidence: x[3], cal: x[4], matched_name: x[4] ? x[0] : null, match_method: x[4] ? "exact" : null}));
+    D.events.unshift({id, ts: Date.now() / 1000, model: "demo", total_ms: 1100, total_cal: 339, thumb_b64: opts.body.thumb_b64, items: items.map(i => ({...i, dish_pred: i.dish}))});
+    return {event_id: id, model: "demo", items, total_calories: 339, total_ms: 1100}; }
+  if (path === "/feedback") { const b = opts.body, ev = D.events.find(e => e.id === b.event_id); let it = ev.items.find(i => i.id === b.item_id);
+    if (!it) { it = {id: D.nextId++, dish_pred: null}; ev.items.push(it); }
+    it.verdict = b.verdict; it.corrected_dish = b.corrected_dish; if (b.verdict === "extra") it.cal = 0; else if (b.corrected_dish || b.corrected_portion_g) it.cal = Math.round((b.corrected_portion_g || it.portion_g || 100) * 1.4);
+    ev.total_cal = ev.items.reduce((a, i) => a + (i.cal || 0), 0); return {item_id: it.id, cal: it.cal, total_calories: ev.total_cal}; }
+  if (path.startsWith("/dishes")) { const q = decodeURIComponent(path.split("=")[1] || "").toLowerCase(); return ["Poha", "Paneer butter masala", "Palak paneer", "Rajma", "Roti", "Raita", "Sambar", "Upma", "Idli", "Masala dosa", "Dal tadka", "Chole"].filter(n => q.length > 1 && n.toLowerCase().includes(q)); }
+  if (path === "/history") return D.events;
+  if (path.startsWith("/admin/summary")) return DEMO_SUMMARY;
+  if (path.startsWith("/admin/events")) { const kind = path.split("=")[1]; return kind === "errors" ? DEMO_SUMMARY.recent_errors.map(e => ({...e, total_ms: 800, items: []})) : D.events.filter(e => kind !== "unreviewed" || e.items.some(i => !i.verdict)); }
+  return {};
+}
+
+/* ---------- boot ---------- */
+document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav.tabs button").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + b.dataset.v));
+  if (b.dataset.v === "log") renderLog(); if (b.dataset.v === "admin") renderAdmin(); window.scrollTo(0, 0);
+});
+(async () => {
+  const m = $("#mode");
+  try {
+    const res = await fetch("/api/health"); const h = await res.json(); if (!h.ok) throw 0;
+    state.live = true; m.className = "mode live"; m.textContent = (h.foundry_configured || h.local_configured) ? `Live, ${num(h.indb_dishes)} INDB dishes` : "Live, model key not set";
+    if (h.models.length > 1) { const s = $("#model"); s.hidden = false; s.innerHTML = h.models.map(x => `<option>${esc(x)}</option>`).join(""); }
+  } catch (e) { seedDemo(); m.textContent = "Demo data"; }
+})();
+</script>
+</body>
+</html>

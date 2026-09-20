@@ -1,0 +1,8 @@
+{
+  "FOUNDRY_ENDPOINT": "https://entitymap-foundry.services.ai.azure.com",
+  "FOUNDRY_API_KEY": "<key from the Foundry deployment page>",
+  "FOUNDRY_MODEL": "claude-haiku-4-5",
+  "FOUNDRY_MODELS": "",
+  "INDB_NAMES_IN_PROMPT": "0",
+  "MODEL_PRICES": "{\"claude-haiku-4-5\": [1.0, 5.0]}"
+}

@@ -1,0 +1,10 @@
+{
+  "WA_TOKEN": "<access token from Meta: WhatsApp > API Setup>",
+  "WA_PHONE_NUMBER_ID": "<phone number ID from the same page>",
+  "WA_APP_SECRET": "<App settings > Basic > App secret>",
+  "WA_VERIFY_TOKEN": "<any long random string you invent>",
+  "WA_GRAPH_VERSION": "v24.0",
+  "WA_ALLOWED_NUMBERS": "",
+  "WA_DAILY_PHOTO_LIMIT": "30",
+  "WA_HASH_SALT": "<any long random string, never change it later>"
+}

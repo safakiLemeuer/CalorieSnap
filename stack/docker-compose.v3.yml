@@ -1,0 +1,53 @@
+# CalorieSnap v3. Runs beside the existing stack on port 8021, so the
+# working /snap/all and /snap/v2 demos on 8020 stay untouched.
+#
+# Place this file and calorie-snap-api-v3/ in:
+#   D:\BHTCorp\bhtlabs-pocs\calorie-snap\stack\
+# Run:
+#   docker compose -f docker-compose.v3.yml up -d --build
+# Own project name, so this file never treats the v2 containers as orphans.
+# Never run --remove-orphans from this folder without it.
+name: caloriesnap-v3
+
+services:
+  calorie-snap-api-v3:
+    container_name: calorie-snap-api-v3
+    build:
+      context: ./calorie-snap-api-v3
+      args:
+        # Set to your existing API image to skip pip (SSL inspection).
+        BASE_IMAGE: ${CS_BASE_IMAGE:-python:3.12-slim}
+    ports:
+      - "8021:8021"
+    environment:
+      CUISINE_DB: /indb/caloriesnap_cuisine.db
+      TELEMETRY_DB: /data/caloriesnap_telemetry.db
+      CONFIG_PATH: /data/caloriesnap_config.json
+      # Air-gapped path. Remove to hide the local model from the UI.
+      FASTVLM_URL: http://host.docker.internal:8031/describe
+    volumes:
+      - ./calorie-snap-api/caloriesnap_cuisine.db:/indb/caloriesnap_cuisine.db:ro
+      - ./data-v3:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    mem_limit: 1g
+    restart: unless-stopped
+
+  calorie-snap-whatsapp:
+    container_name: calorie-snap-whatsapp
+    build:
+      context: ./calorie-snap-whatsapp
+      args:
+        BASE_IMAGE: ${CS_BASE_IMAGE:-python:3.12-slim}
+    ports:
+      - "8022:8022"
+    environment:
+      CS_API_URL: http://calorie-snap-api-v3:8021
+      WA_CONFIG_PATH: /data/whatsapp_config.json
+      WA_DB: /data/whatsapp_bot.db
+    volumes:
+      - ./data-v3:/data
+    depends_on:
+      - calorie-snap-api-v3
+    mem_limit: 512m
+    restart: unless-stopped

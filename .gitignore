@@ -22,3 +22,17 @@ __MACOSX/
 
 # Docker
 .dockerignore
+
+# CalorieSnap v3 runtime data and secrets
+stack/data-v3/
+**/caloriesnap_config.json
+**/whatsapp_config.json
+*telemetry*.db
+*whatsapp_bot*.db
+*.db-journal
+*.db-wal
+*.db-shm
+__pycache__/
+*.pyc
+*.zip
+stack/indb_audit.csv

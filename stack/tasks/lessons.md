@@ -1,0 +1,24 @@
+# Lessons
+
+- Forced tool use beats "return only JSON". It removes the parse-failure class instead of handling it.
+- Log the INDB match method with every item. Without it there is no way to tell a model error from a lookup error.
+- Log failures as events, not just exceptions. Error rate and raw output belong in the same table as successes.
+- Resize in the client. Same bytes on web and iPhone, lower token cost, no server image library.
+- Keep the v2 stack running on 8020 until v3 numbers beat it on the same photos.
+- A low match rate is a naming problem before it is a coverage problem. INDB names are descriptive ("Boiled rice (Uble chawal)"). Check how the DB spells things before curating new rows.
+- Verified does not mean correct. Guard the reference data with plausibility bounds and surface hits in Admin.
+- Never let an unmatched item count as zero silently. Show the total as partial.
+- Give each compose file its own project name. Otherwise Docker reports the other stack as orphans, and --remove-orphans would delete it.
+- A shortlist cut at 8 loses the right row when a generic head noun ("rice") ties dozens of rows. With a model doing the final pick, retrieve wide.
+- Words the DB never uses must not count against a candidate's score.
+- A strict picker returns none for generic names ("Raita"). Tell it to choose the plainest variant, and grade near matches as close instead of hiding them.
+- Judge data plausibility on the value actually used. A whole tandoori chicken is a legitimate 1,400 kcal serving.
+- Stamp every event with the release version. Without it, old rows drag the KPI and a fix looks like it did nothing.
+- A 100% match rate is not a quality number. Basmati Rice matched to Rice puttu counts as matched. Track wrong matches separately from wrong dishes.
+- Every automated decision that gets cached needs a human override that outranks it.
+- Compare repeat-photo stability within one release only. A prompt change is supposed to change answers.
+- Never swallow an error behind a generic hint. Show the server message, in a visible color, next to the control that failed.
+- A native datalist is invisible affordance. For a must-pick-from-list input, render the options as buttons.
+- Browser-test every new control end to end before shipping. The API test passing says nothing about the click path.
+- Turn corrections into prompt hints. "Said naan, was papad (3x)" fixes the next photo today. Fine-tuning can wait for volume.
+- A missed or confused low-weight item can be the biggest calorie error on the plate: papad read as naan is +380 kcal.
